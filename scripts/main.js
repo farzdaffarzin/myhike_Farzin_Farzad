@@ -1,3 +1,31 @@
+//Global variable pointing to the current user's Firestore document
+var currentUser;   
+
+//Function that calls everything needed for the main page  
+function doAll() {
+    firebase.auth().onAuthStateChanged(user => {
+        if (user) {
+            currentUser = db.collection("users").doc(user.uid); //global
+            console.log(currentUser);
+
+            // figure out what day of the week it is today
+            const weekday = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+            const d = new Date();
+            let day = weekday[d.getDay()];
+
+            // the following functions are always called when someone is logged in
+            readQuote(day);
+            insertNameFromFirestore();
+            displayCardsDynamically("hikes");
+        } else {
+            // No user is signed in.
+            console.log("No user is signed in");
+            window.location.href = "login.html";
+        }
+    });
+}
+doAll();
+
 function getNameFromAuth() {
     firebase.auth().onAuthStateChanged(user => {
         // Check if a user is signed in:
@@ -22,7 +50,21 @@ function getNameFromAuth() {
         }
     });
 }
-getNameFromAuth(); //run the function
+// getNameFromAuth(); //run the function
+
+// Insert name function using the global variable "currentUser"
+function insertNameFromFirestore() {
+    currentUser.get().then(userDoc => {
+        //get the user name
+        var user_Name = userDoc.data().name;
+        console.log(user_Name);
+        $("#name-goes-here").text(user_Name); //jquery
+        // document.getElementByID("name-goes-here").innetText=user_Name;
+    })
+}
+// Comment out the next line (we will call this function from doAll())
+// insertNameFromFirestore();
+
 
 // Function to read the quote of the day from the Firestore "quotes" collection
 // Input param is the String representing the day of the week, aka, the document name
@@ -38,7 +80,7 @@ function readQuote(day) {
 		       //document.querySelector("#quote-goes-here").innerHTML = dayDoc.data().quote;
       })
 }
-readQuote("tuesday");        //calling the function
+// readQuote("tuesday");        //calling the function
 
 function writeHikes() {
     //define a variable for the collection you want to create in Firestore to populate data
@@ -108,6 +150,8 @@ function displayCardsDynamically(collection) {
                 newcard.querySelector('.card-text').innerHTML = details;
                 newcard.querySelector('.card-image').src = `./images/${hikeCode}.jpg`; //Example: NV01.jpg
                 newcard.querySelector('a').href = "eachHike.html?docID="+docID;
+                newcard.querySelector('i').id = 'save-' + docID;   //guaranteed to be unique
+                newcard.querySelector('i').onclick = () => saveBookmark(docID);
 
                 //Optional: give unique ids to all elements for future use
                 // newcard.querySelector('.card-title').setAttribute("id", "ctitle" + i);
